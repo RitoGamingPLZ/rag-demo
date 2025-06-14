@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: rag_postgres
+    restart: always
+    env_file:
+      - .env.docker
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api-server:
+    build: ./api-server
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api-server:/app
+
+volumes:
+  postgres_data:

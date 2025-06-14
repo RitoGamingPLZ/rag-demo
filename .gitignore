@@ -1,0 +1,44 @@
+# Python virtualenv
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Alembic
+alembic/versions/
+
+# VSCode workspace settings
+.vscode/
+*.code-workspace
+
+# Environment files
+.env
+.env.*
+
+# Pytest / Coverage / Logs
+.cache/
+*.log
+coverage.*
+htmlcov/
+*.cover
+
+# MyPy, Ruff, or other linters
+.mypy_cache/
+ruff_cache/
+
+# Docker-related
+*.pid
+*.sock
+docker-compose.override.yml
+
+# Node (frontend-chatbot)
+frontend-chatbot/node_modules/
+frontend-chatbot/dist/
+frontend-chatbot/.next/
+frontend-chatbot/.env
+frontend-chatbot/.env.*
+
+# macOS / OS-specific
+.DS_Store
+Thumbs.db

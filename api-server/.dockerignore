@@ -1,0 +1,42 @@
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignore virtual environments
+.venv/
+venv/
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore Alembic migration history (optional)
+alembic/versions/
+
+# Ignore local tooling
+.vscode/
+*.code-workspace
+
+# Ignore Git
+.git
+.gitignore
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+
+# Ignore Docker files you don't want copied
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile.dev
+
+# Ignore test artifacts
+.coverage
+htmlcov/
+.cache/
+.mypy_cache/
+ruff_cache/
+
+# Ignore frontend directory if it's not part of the backend image
+frontend-chatbot/
