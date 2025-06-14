@@ -1,37 +1,92 @@
-<!-- TechStack -->
+RAG Demo (Retrieval-Augmented Generation)
 
-AI modal hosting: Ollama
-AI tool: Langchain
-Backend: FastAPI
-ORM: SQLAlchemy
-DB migration: alembic
+A full-stack Retrieval-Augmented Generation (RAG) system powered by FastAPI, LangChain, and Ollama.
 
-<!-- Dev setup -->
-<!-- activate virtual python env -->
-```
-python3 -m venv .venv
-source .venv/bin/activate
-# you should see (.venv) username:~/rag-demo
-pip install -r requirements.txt
-```
+------------------------------------------------------------
+Tech Stack:
 
-<!-- Data model -->
-write data models under app/models folder
-run below commands to generate db migration files
-```
-alembic revision --autogenerate -m "YOUR MESSAGE HERE"
-alembic upgrade head
-```
+- AI Model Hosting:     Ollama
+- AI Pipeline:          LangChain
+- Backend:              FastAPI
+- ORM:                  SQLAlchemy
+- DB Migration:         Alembic
 
-for more information,
-https://alembic.sqlalchemy.org/en/latest/tutorial.html
-https://www.sqlalchemy.org/
+------------------------------------------------------------
+Local Development Setup:
 
-<!-- Route -->
-write api endpoints under routes folder
+1. Clone the Repository:
 
-<!-- logic -->
-write backend logic under services folder
+   git clone https://github.com/your-username/rag-demo.git
+   cd rag-demo
 
-<!-- job -->
-write cron job trigger under jobs folder
+2. Create and Activate Virtual Environment:
+
+   python3 -m venv .venv
+   source .venv/bin/activate
+   # You should now see: (.venv) username:~/rag-demo
+
+3. Install Dependencies:
+
+   pip install -r requirements.txt
+
+------------------------------------------------------------
+Folder Structure:
+
+app/
+├── api/         - API route handlers
+├── models/      - SQLAlchemy models
+├── schemas/     - Pydantic schemas
+├── crud/        - Database access logic
+├── services/    - Business logic and integrations
+├── jobs/        - Scheduled/cron job scripts
+├── db.py        - Database engine and session
+└── main.py      - FastAPI entry point
+
+------------------------------------------------------------
+Database Migrations:
+
+Generate a new migration:
+
+   alembic revision --autogenerate -m "Add your message"
+
+Apply the migration:
+
+   alembic upgrade head
+
+More Info:
+- Alembic:      https://alembic.sqlalchemy.org/en/latest/tutorial.html
+- SQLAlchemy:   https://www.sqlalchemy.org/
+
+------------------------------------------------------------
+API Routes:
+
+Write your FastAPI endpoints under the app/api/ folder using APIRouter.
+
+------------------------------------------------------------
+Backend Logic:
+
+Write processing and business logic in the app/services/ folder.
+
+------------------------------------------------------------
+Cron Jobs / Background Tasks:
+
+Write scheduled jobs in the app/jobs/ folder.
+Use FastAPI startup events or APScheduler to schedule tasks.
+
+------------------------------------------------------------
+Coming Soon:
+
+- ✅ Embedding + Document Uploading
+- ✅ RAG Query Endpoint
+- ⏳ Vector Store (Qdrant or FAISS) integration
+- ⏳ Frontend UI (optional)
+
+------------------------------------------------------------
+Contributing:
+
+Feel free to fork, clone, and submit pull requests or issues.
+
+------------------------------------------------------------
+License:
+
+MIT License
