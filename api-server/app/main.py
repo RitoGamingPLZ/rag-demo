@@ -1,6 +1,14 @@
 from fastapi import FastAPI
-from app.db import AsyncSessionLocal
+# from app.db import AsyncSessionLocal
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from langchain_ollama import OllamaLLM
+
+llm = OllamaLLM(model="deepseek-r1:1.5b")
+
+class Item(BaseModel):
+    question: str
 
 # Optional: import your routers (if using modular routing)
 # from app.routers import chat
@@ -29,3 +37,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("Shutting down backend...")
+
+@app.post("/chat")
+async def chat_endpoint(item: Item):
+    # Placeholder for chat logic
+    question = item.question
+    result = llm.invoke(question)
+    return {"response": f"Echo: {result}"}
