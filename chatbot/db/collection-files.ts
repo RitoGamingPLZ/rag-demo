@@ -9,7 +9,7 @@ export const getCollectionFilesByCollectionId = async (
     select: {
       id: true,
       name: true,
-      files: {
+      collectionFiles: {
         include: {
           file: {
             select: {

@@ -1,8 +1,8 @@
 import { useChatHandler } from "@/components/chat/chat-hooks/use-chat-handler"
 import { ChatbotUIContext } from "@/context/context"
-import { Tables } from "@/supabase/types"
 import { FC, useContext, useState } from "react"
 import { Message } from "../messages/message"
+import { Message as MessageEntity } from "@/lib/generated/prisma"
 
 interface ChatMessagesProps {}
 
@@ -11,10 +11,10 @@ export const ChatMessages: FC<ChatMessagesProps> = ({}) => {
 
   const { handleSendEdit } = useChatHandler()
 
-  const [editingMessage, setEditingMessage] = useState<Tables<"messages">>()
+  const [editingMessage, setEditingMessage] = useState<MessageEntity>()
 
   return chatMessages
-    .sort((a, b) => a.message.sequence_number - b.message.sequence_number)
+    .sort((a, b) => a.message.sequenceNumber - b.message.sequenceNumber)
     .map((chatMessage, index, array) => {
       const messageFileItems = chatFileItems.filter(
         (chatFileItem, _, self) =>
@@ -24,7 +24,7 @@ export const ChatMessages: FC<ChatMessagesProps> = ({}) => {
 
       return (
         <Message
-          key={chatMessage.message.sequence_number}
+          key={chatMessage.message.sequenceNumber}
           message={chatMessage.message}
           fileItems={messageFileItems}
           isEditing={editingMessage?.id === chatMessage.message.id}

@@ -1,9 +1,9 @@
 import { ChatbotUIContext } from "@/context/context"
-import { Tables } from "@/supabase/types"
 import { IconRobotFace } from "@tabler/icons-react"
 import Image from "next/image"
 import { FC, useContext, useEffect, useRef } from "react"
 import { usePromptAndCommand } from "./chat-hooks/use-prompt-and-command"
+import { Assistant } from "@/lib/generated/prisma"
 
 interface AssistantPickerProps {}
 
@@ -35,7 +35,7 @@ export const AssistantPicker: FC<AssistantPickerProps> = ({}) => {
     setIsAssistantPickerOpen(isOpen)
   }
 
-  const callSelectAssistant = (assistant: Tables<"assistants">) => {
+  const callSelectAssistant = (assistant: Assistant) => {
     handleSelectAssistant(assistant)
     handleOpenChange(false)
   }
@@ -90,15 +90,15 @@ export const AssistantPicker: FC<AssistantPickerProps> = ({}) => {
                   tabIndex={0}
                   className="hover:bg-accent focus:bg-accent flex cursor-pointer items-center rounded p-2 focus:outline-none"
                   onClick={() =>
-                    callSelectAssistant(item as Tables<"assistants">)
+                    callSelectAssistant(item as Assistant)
                   }
                   onKeyDown={getKeyDownHandler(index)}
                 >
-                  {item.image_path ? (
+                  {item.imagePath ? (
                     <Image
                       src={
                         assistantImages.find(
-                          image => image.path === item.image_path
+                          image => image.path === item.imagePath
                         )?.url || ""
                       }
                       alt={item.name}

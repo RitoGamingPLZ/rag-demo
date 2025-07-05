@@ -7,7 +7,7 @@ export const getAssistantFilesByAssistantId = async (assistantId: string) => {
     select: {
       id: true,
       name: true,
-      files: {
+      assistantFiles: {
         include: {
           file: true
         }

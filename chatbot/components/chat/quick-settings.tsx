@@ -5,7 +5,7 @@ import { getAssistantToolsByAssistantId } from "@/db/assistant-tools"
 import { getCollectionFilesByCollectionId } from "@/db/collection-files"
 import useHotkey from "@/lib/hooks/use-hotkey"
 import { LLM_LIST } from "@/lib/models/llm/llm-list"
-import { Tables } from "@/supabase/types"
+import { Preset, Assistant } from "@/lib/generated/prisma"
 import { LLMID } from "@/types"
 import { IconChevronDown, IconRobotFace } from "@tabler/icons-react"
 import Image from "next/image"
@@ -60,12 +60,12 @@ export const QuickSettings: FC<QuickSettingsProps> = ({}) => {
   }, [isOpen])
 
   const handleSelectQuickSetting = async (
-    item: Tables<"presets"> | Tables<"assistants"> | null,
+    item: Preset | Assistant | null,
     contentType: "presets" | "assistants" | "remove"
   ) => {
     console.log({ item, contentType })
     if (contentType === "assistants" && item) {
-      setSelectedAssistant(item as Tables<"assistants">)
+      setSelectedAssistant(item as Assistant)
       setLoading(true)
       let allFiles = []
       const assistantFiles = (await getAssistantFilesByAssistantId(item.id))
@@ -95,7 +95,7 @@ export const QuickSettings: FC<QuickSettingsProps> = ({}) => {
       setLoading(false)
       setSelectedPreset(null)
     } else if (contentType === "presets" && item) {
-      setSelectedPreset(item as Tables<"presets">)
+      setSelectedPreset(item as Preset)
       setSelectedAssistant(null)
       setChatFiles([])
       setSelectedTools([])
@@ -260,8 +260,8 @@ export const QuickSettings: FC<QuickSettingsProps> = ({}) => {
                 item={
                   selectedPreset ||
                   (selectedAssistant as
-                    | Tables<"presets">
-                    | Tables<"assistants">)
+                    | Preset
+                    | Assistant)
                 }
                 onSelect={() => {
                   handleSelectQuickSetting(null, "remove")
@@ -294,7 +294,7 @@ export const QuickSettings: FC<QuickSettingsProps> = ({}) => {
                       ? assistantImages.find(
                           image =>
                             image.path ===
-                            (item as Tables<"assistants">).image_path
+                            (item as Assistant).image_path
                         )?.base64 || ""
                       : ""
                   }

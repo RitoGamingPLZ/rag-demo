@@ -1,15 +1,15 @@
 import { LLM_LIST } from "@/lib/models/llm/llm-list"
-import { Tables } from "@/supabase/types"
 import { IconCircleCheckFilled, IconRobotFace } from "@tabler/icons-react"
 import Image from "next/image"
 import { FC } from "react"
 import { ModelIcon } from "../models/model-icon"
 import { DropdownMenuItem } from "../ui/dropdown-menu"
+import { Preset, Assistant } from "@/lib/generated/prisma"
 
 interface QuickSettingOptionProps {
   contentType: "presets" | "assistants"
   isSelected: boolean
-  item: Tables<"presets"> | Tables<"assistants">
+  item: Preset | Assistant
   onSelect: () => void
   image: string
 }
