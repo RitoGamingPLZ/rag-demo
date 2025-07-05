@@ -1,9 +1,9 @@
-import { Tables } from "@/supabase/types"
+import { Profile } from "@/lib/generated/prisma"
 import { LLM, LLMID, OpenRouterLLM } from "@/types"
 import { toast } from "sonner"
 import { LLM_LIST_MAP } from "./llm/llm-list"
 
-export const fetchHostedModels = async (profile: Tables<"profiles">) => {
+export const fetchHostedModels = async (profile: Profile) => {
   try {
     const providers = ["google", "anthropic", "mistral", "groq", "perplexity"]
 

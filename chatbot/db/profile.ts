@@ -1,71 +1,46 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getProfileByUserId = async (userId: string) => {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", userId)
-    .single()
-
-  if (!profile) {
-    throw new Error(error.message)
-  }
+  const profile = await prisma.profile.findUnique({
+    where: { userId }
+  })
 
   return profile
 }
 
 export const getProfilesByUserId = async (userId: string) => {
-  const { data: profiles, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", userId)
-
-  if (!profiles) {
-    throw new Error(error.message)
-  }
+  const profiles = await prisma.profile.findMany({
+    where: { userId }
+  })
 
   return profiles
 }
 
-export const createProfile = async (profile: TablesInsert<"profiles">) => {
-  const { data: createdProfile, error } = await supabase
-    .from("profiles")
-    .insert([profile])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+export const createProfile = async (profile: Prisma.ProfileCreateInput) => {
+  const createdProfile = await prisma.profile.create({
+    data: profile
+  })
 
   return createdProfile
 }
 
 export const updateProfile = async (
   profileId: string,
-  profile: TablesUpdate<"profiles">
+  profile: Prisma.ProfileUpdateInput
 ) => {
-  const { data: updatedProfile, error } = await supabase
-    .from("profiles")
-    .update(profile)
-    .eq("id", profileId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedProfile = await prisma.profile.update({
+    where: { id: profileId },
+    data: profile
+  })
 
   return updatedProfile
 }
 
 export const deleteProfile = async (profileId: string) => {
-  const { error } = await supabase.from("profiles").delete().eq("id", profileId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.profile.delete({
+    where: { id: profileId }
+  })
 
   return true
 }

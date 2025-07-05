@@ -1,4 +1,4 @@
-import { Tables } from "@/supabase/types"
+import { Assistant } from "@/lib/generated/prisma"
 import { ChatPayload, MessageImage } from "@/types"
 import { encode } from "gpt-tokenizer"
 import { getBase64FromDataURL, getMediaTypeFromDataURL } from "@/lib/utils"
@@ -7,7 +7,7 @@ const buildBasePrompt = (
   prompt: string,
   profileContext: string,
   workspaceInstructions: string,
-  assistant: Tables<"assistants"> | null
+  assistant: Assistant | null
 ) => {
   let fullPrompt = ""
 

@@ -1,0 +1,663 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @unique @map("user_id") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Required fields
+  bio                     String  @db.Text
+  hasOnboarded           Boolean @default(false) @map("has_onboarded")
+  imageUrl               String  @map("image_url") @db.Text
+  imagePath              String  @map("image_path") @db.Text
+  profileContext         String  @map("profile_context") @db.Text
+  displayName            String  @map("display_name") @db.Text
+  useAzureOpenai         Boolean @map("use_azure_openai")
+  username               String  @unique @db.Text
+  
+  // Optional API keys
+  anthropicApiKey        String? @map("anthropic_api_key") @db.Text
+  azureOpenai35TurboId   String? @map("azure_openai_35_turbo_id") @db.Text
+  azureOpenai45TurboId   String? @map("azure_openai_45_turbo_id") @db.Text
+  azureOpenai45VisionId  String? @map("azure_openai_45_vision_id") @db.Text
+  azureOpenaiApiKey      String? @map("azure_openai_api_key") @db.Text
+  azureOpenaiEndpoint    String? @map("azure_openai_endpoint") @db.Text
+  azureOpenaiEmbeddingsId String? @map("azure_openai_embeddings_id") @db.Text
+  googleGeminiApiKey     String? @map("google_gemini_api_key") @db.Text
+  groqApiKey             String? @map("groq_api_key") @db.Text
+  mistralApiKey          String? @map("mistral_api_key") @db.Text
+  openaiApiKey           String? @map("openai_api_key") @db.Text
+  openaiOrganizationId   String? @map("openai_organization_id") @db.Text
+  openrouterApiKey       String? @map("openrouter_api_key") @db.Text
+  perplexityApiKey       String? @map("perplexity_api_key") @db.Text
+  
+  // Relationships
+  workspaces          Workspace[]
+  folders             Folder[]
+  files               File[]
+  fileItems           FileItem[]
+  assistants          Assistant[]
+  chats               Chat[]
+  messages            Message[]
+  prompts             Prompt[]
+  presets             Preset[]
+  collections         Collection[]
+  tools               Tool[]
+  models              Model[]
+  chatFiles           ChatFile[]
+  messageFileItems    MessageFileItem[]
+  fileWorkspaces      FileWorkspace[]
+  promptWorkspaces    PromptWorkspace[]
+  presetWorkspaces    PresetWorkspace[]
+  collectionFiles     CollectionFile[]
+  collectionWorkspaces CollectionWorkspace[]
+  assistantWorkspaces AssistantWorkspace[]
+  assistantFiles      AssistantFile[]
+  assistantCollections AssistantCollection[]
+  assistantTools      AssistantTool[]
+  toolWorkspaces      ToolWorkspace[]
+  modelWorkspaces     ModelWorkspace[]
+  
+  @@index([userId])
+  @@map("profiles")
+}
+
+model Workspace {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing     String    @default("private") @db.Text
+  
+  // Required fields
+  defaultContextLength     Int     @map("default_context_length")
+  defaultModel            String  @map("default_model") @db.Text
+  defaultPrompt           String  @map("default_prompt") @db.Text
+  defaultTemperature      Float   @map("default_temperature") @db.Real
+  description             String  @db.Text
+  embeddingsProvider      String  @map("embeddings_provider") @db.Text
+  includeProfileContext   Boolean @map("include_profile_context")
+  includeWorkspaceInstructions Boolean @map("include_workspace_instructions")
+  instructions            String  @db.Text
+  isHome                  Boolean @default(false) @map("is_home")
+  name                    String  @db.Text
+  imagePath               String? @map("image_path") @db.Text
+  
+  // Relationships
+  profile             Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folders             Folder[]
+  chats               Chat[]
+  fileWorkspaces      FileWorkspace[]
+  promptWorkspaces    PromptWorkspace[]
+  presetWorkspaces    PresetWorkspace[]
+  collectionWorkspaces CollectionWorkspace[]
+  assistantWorkspaces AssistantWorkspace[]
+  toolWorkspaces      ToolWorkspace[]
+  modelWorkspaces     ModelWorkspace[]
+  
+  @@index([userId])
+  @@map("workspaces")
+}
+
+model Folder {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  workspaceId  String    @map("workspace_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Required fields
+  name         String    @db.Text
+  description  String    @db.Text
+  type         String    @db.Text
+  
+  // Relationships
+  profile      Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  files        File[]
+  assistants   Assistant[]
+  chats        Chat[]
+  prompts      Prompt[]
+  presets      Preset[]
+  collections  Collection[]
+  tools        Tool[]
+  models       Model[]
+  
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("folders")
+}
+
+model File {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId     String?   @map("folder_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing      String    @default("private") @db.Text
+  
+  // Required fields
+  name         String    @db.Text
+  description  String    @db.Text
+  type         String    @db.Text
+  size         Int       @db.Integer
+  tokens       Int       @db.Integer
+  filePath     String    @map("file_path") @db.Text
+  
+  // Relationships
+  profile         Profile      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder          Folder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  fileItems       FileItem[]
+  chatFiles       ChatFile[]
+  fileWorkspaces  FileWorkspace[]
+  assistantFiles  AssistantFile[]
+  collectionFiles CollectionFile[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("files")
+}
+
+model FileItem {
+  id              String    @id @default(uuid()) @db.Uuid
+  fileId          String    @map("file_id") @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing         String    @default("private") @db.Text
+  
+  // Required fields
+  content         String    @db.Text
+  tokens          Int       @db.Integer
+  
+  // Vector embeddings (commented out until vector extension is available)
+  // localEmbedding  Unsupported("vector(384)")? @map("local_embedding")
+  // openaiEmbedding Unsupported("vector(1536)")? @map("openai_embedding")
+  
+  // Relationships
+  file            File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  profile         Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  messageFileItems MessageFileItem[]
+  
+  @@index([userId])
+  @@index([fileId])
+  @@map("file_items")
+}
+
+model Assistant {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId                String?   @map("folder_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing                 String    @default("private") @db.Text
+  
+  // Required fields
+  name                    String    @db.Text
+  description             String    @db.Text
+  prompt                  String    @db.Text
+  model                   String    @db.Text
+  temperature             Float     @db.Real
+  contextLength           Int       @map("context_length")
+  imagePath               String?   @map("image_path") @db.Text
+  embeddingsProvider      String    @map("embeddings_provider") @db.Text
+  includeProfileContext   Boolean   @map("include_profile_context")
+  includeWorkspaceInstructions Boolean @map("include_workspace_instructions")
+  
+  // Relationships
+  profile             Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder              Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  chats               Chat[]
+  messages            Message[]
+  assistantWorkspaces AssistantWorkspace[]
+  assistantFiles      AssistantFile[]
+  assistantCollections AssistantCollection[]
+  assistantTools      AssistantTool[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("assistants")
+}
+
+model Chat {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  workspaceId             String    @map("workspace_id") @db.Uuid
+  assistantId             String?   @map("assistant_id") @db.Uuid
+  folderId                String?   @map("folder_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing                 String    @default("private") @db.Text
+  
+  // Required fields
+  contextLength           Int       @map("context_length")
+  embeddingsProvider      String    @map("embeddings_provider") @db.Text
+  includeProfileContext   Boolean   @map("include_profile_context")
+  includeWorkspaceInstructions Boolean @map("include_workspace_instructions")
+  model                   String    @db.Text
+  name                    String    @db.Text
+  prompt                  String    @db.Text
+  temperature             Float     @db.Real
+  
+  // Relationships
+  profile     Profile    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assistant   Assistant? @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  folder      Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  messages    Message[]
+  chatFiles   ChatFile[]
+  
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("chats")
+}
+
+model Message {
+  id              String    @id @default(uuid()) @db.Uuid
+  chatId          String    @map("chat_id") @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  assistantId     String?   @map("assistant_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Required fields
+  content         String    @db.Text
+  role            String    @db.Text
+  model           String    @db.Text
+  sequenceNumber  Int       @map("sequence_number")
+  imagePaths      String[]  @map("image_paths") @db.Text
+  
+  // Relationships
+  chat            Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  profile         Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  assistant       Assistant? @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  messageFileItems MessageFileItem[]
+  
+  @@index([chatId])
+  @@index([userId])
+  @@map("messages")
+}
+
+model Prompt {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId     String?   @map("folder_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing      String    @default("private") @db.Text
+  
+  // Required fields
+  name         String    @db.Text
+  content      String    @db.Text
+  
+  // Relationships
+  profile          Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder           Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  promptWorkspaces PromptWorkspace[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("prompts")
+}
+
+model Preset {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId                String?   @map("folder_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing                 String    @default("private") @db.Text
+  
+  // Required fields
+  name                    String    @db.Text
+  description             String    @db.Text
+  model                   String    @db.Text
+  prompt                  String    @db.Text
+  temperature             Float     @db.Real
+  contextLength           Int       @map("context_length")
+  embeddingsProvider      String    @map("embeddings_provider") @db.Text
+  includeProfileContext   Boolean   @map("include_profile_context")
+  includeWorkspaceInstructions Boolean @map("include_workspace_instructions")
+  
+  // Relationships
+  profile          Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder           Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  presetWorkspaces PresetWorkspace[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("presets")
+}
+
+model Collection {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId     String?   @map("folder_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing      String    @default("private") @db.Text
+  
+  // Required fields
+  name         String    @db.Text
+  description  String    @db.Text
+  
+  // Relationships
+  profile              Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder               Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  collectionFiles      CollectionFile[]
+  collectionWorkspaces CollectionWorkspace[]
+  assistantCollections AssistantCollection[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("collections")
+}
+
+model Tool {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId      String?   @map("folder_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing       String    @default("private") @db.Text
+  
+  // Required fields
+  name          String    @db.Text
+  description   String    @db.Text
+  url           String    @db.Text
+  schema        Json      @db.JsonB
+  customHeaders Json      @map("custom_headers") @db.JsonB
+  
+  // Relationships
+  profile        Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder         Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  assistantTools AssistantTool[]
+  toolWorkspaces ToolWorkspace[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("tools")
+}
+
+model Model {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Text
+  folderId        String?   @map("folder_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Sharing
+  sharing         String    @default("private") @db.Text
+  
+  // Required fields
+  name            String    @db.Text
+  description     String    @db.Text
+  modelId         String    @map("model_id") @db.Text
+  apiKey          String    @map("api_key") @db.Text
+  baseUrl         String    @map("base_url") @db.Text
+  contextLength   Int       @map("context_length")
+  
+  // Relationships
+  profile         Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder          Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  modelWorkspaces ModelWorkspace[]
+  
+  @@index([userId])
+  @@index([folderId])
+  @@map("models")
+}
+
+// Junction tables for many-to-many relationships
+model ChatFile {
+  userId      String    @map("user_id") @db.Text
+  chatId    String   @map("chat_id") @db.Uuid
+  fileId    String   @map("file_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  chat    Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@id([chatId, fileId])
+  @@index([chatId])
+  @@map("chat_files")
+}
+
+model MessageFileItem {
+  userId      String    @map("user_id") @db.Text
+  messageId  String   @map("message_id") @db.Uuid
+  fileItemId String   @map("file_item_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile  Profile  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  message  Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileItem FileItem @relation(fields: [fileItemId], references: [id], onDelete: Cascade)
+  
+  @@id([messageId, fileItemId])
+  @@index([messageId])
+  @@map("message_file_items")
+}
+
+model FileWorkspace {
+  userId      String    @map("user_id") @db.Text
+  fileId      String   @map("file_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  file      File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([fileId, workspaceId])
+  @@index([fileId])
+  @@map("file_workspaces")
+}
+
+model PromptWorkspace {
+  userId      String    @map("user_id") @db.Text
+  promptId    String   @map("prompt_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  prompt    Prompt    @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([promptId, workspaceId])
+  @@index([promptId])
+  @@map("prompt_workspaces")
+}
+
+model PresetWorkspace {
+  userId      String    @map("user_id") @db.Text
+  presetId    String   @map("preset_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  preset    Preset    @relation(fields: [presetId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([presetId, workspaceId])
+  @@index([presetId])
+  @@map("preset_workspaces")
+}
+
+model CollectionFile {
+  userId      String    @map("user_id") @db.Text
+  collectionId String   @map("collection_id") @db.Uuid
+  fileId       String   @map("file_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile    Profile    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  file       File       @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@id([collectionId, fileId])
+  @@index([collectionId])
+  @@map("collection_files")
+}
+
+model CollectionWorkspace {
+  userId      String    @map("user_id") @db.Text
+  collectionId String   @map("collection_id") @db.Uuid
+  workspaceId  String   @map("workspace_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile    Profile    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([collectionId, workspaceId])
+  @@index([collectionId])
+  @@map("collection_workspaces")
+}
+
+model AssistantWorkspace {
+  userId      String    @map("user_id") @db.Text
+  assistantId String   @map("assistant_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([assistantId, workspaceId])
+  @@index([assistantId])
+  @@map("assistant_workspaces")
+}
+
+model AssistantFile {
+  userId      String    @map("user_id") @db.Text
+  assistantId String   @map("assistant_id") @db.Uuid
+  fileId      String   @map("file_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  file      File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@id([assistantId, fileId])
+  @@index([assistantId])
+  @@map("assistant_files")
+}
+
+model AssistantCollection {
+  userId      String    @map("user_id") @db.Text
+  assistantId  String   @map("assistant_id") @db.Uuid
+  collectionId String   @map("collection_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile    Profile    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  assistant  Assistant  @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  
+  @@id([assistantId, collectionId])
+  @@index([assistantId])
+  @@map("assistant_collections")
+}
+
+model AssistantTool {
+  userId      String    @map("user_id") @db.Text
+  assistantId String   @map("assistant_id") @db.Uuid
+  toolId      String   @map("tool_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  assistant Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  tool      Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  
+  @@id([assistantId, toolId])
+  @@index([assistantId])
+  @@map("assistant_tools")
+}
+
+model ToolWorkspace {
+  userId      String    @map("user_id") @db.Text
+  toolId      String   @map("tool_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  tool      Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([toolId, workspaceId])
+  @@index([toolId])
+  @@map("tool_workspaces")
+}
+
+model ModelWorkspace {
+  userId      String    @map("user_id") @db.Text
+  modelId     String   @map("model_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+  
+  // Relationships
+  profile   Profile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  model     Model     @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@id([modelId, workspaceId])
+  @@index([modelId])
+  @@map("model_workspaces")
+}

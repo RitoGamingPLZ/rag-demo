@@ -1,4 +1,4 @@
-import { Tables } from "@/supabase/types"
+import { Profile, Workspace, Chat, File, Assistant, Collection, Preset, Prompt, Tool, Model, Folder } from "@/lib/generated/prisma"
 import {
   ChatFile,
   ChatMessage,
@@ -14,30 +14,30 @@ import { Dispatch, SetStateAction, createContext } from "react"
 
 interface ChatbotUIContext {
   // PROFILE STORE
-  profile: Tables<"profiles"> | null
-  setProfile: Dispatch<SetStateAction<Tables<"profiles"> | null>>
+  profile: Profile | null
+  setProfile: Dispatch<SetStateAction<Profile | null>>
 
   // ITEMS STORE
-  assistants: Tables<"assistants">[]
-  setAssistants: Dispatch<SetStateAction<Tables<"assistants">[]>>
-  collections: Tables<"collections">[]
-  setCollections: Dispatch<SetStateAction<Tables<"collections">[]>>
-  chats: Tables<"chats">[]
-  setChats: Dispatch<SetStateAction<Tables<"chats">[]>>
-  files: Tables<"files">[]
-  setFiles: Dispatch<SetStateAction<Tables<"files">[]>>
-  folders: Tables<"folders">[]
-  setFolders: Dispatch<SetStateAction<Tables<"folders">[]>>
-  models: Tables<"models">[]
-  setModels: Dispatch<SetStateAction<Tables<"models">[]>>
-  presets: Tables<"presets">[]
-  setPresets: Dispatch<SetStateAction<Tables<"presets">[]>>
-  prompts: Tables<"prompts">[]
-  setPrompts: Dispatch<SetStateAction<Tables<"prompts">[]>>
-  tools: Tables<"tools">[]
-  setTools: Dispatch<SetStateAction<Tables<"tools">[]>>
-  workspaces: Tables<"workspaces">[]
-  setWorkspaces: Dispatch<SetStateAction<Tables<"workspaces">[]>>
+  assistants: Assistant[]
+  setAssistants: Dispatch<SetStateAction<Assistant[]>>
+  collections: Collection[]
+  setCollections: Dispatch<SetStateAction<Collection[]>>
+  chats: Chat[]
+  setChats: Dispatch<SetStateAction<Chat[]>>
+  files: File[]
+  setFiles: Dispatch<SetStateAction<File[]>>
+  folders: Folder[]
+  setFolders: Dispatch<SetStateAction<Folder[]>>
+  models: Model[]
+  setModels: Dispatch<SetStateAction<Model[]>>
+  presets: Preset[]
+  setPresets: Dispatch<SetStateAction<Preset[]>>
+  prompts: Prompt[]
+  setPrompts: Dispatch<SetStateAction<Prompt[]>>
+  tools: Tool[]
+  setTools: Dispatch<SetStateAction<Tool[]>>
+  workspaces: Workspace[]
+  setWorkspaces: Dispatch<SetStateAction<Workspace[]>>
 
   // MODELS STORE
   envKeyMap: Record<string, VALID_ENV_KEYS>
@@ -50,18 +50,18 @@ interface ChatbotUIContext {
   setAvailableOpenRouterModels: Dispatch<SetStateAction<OpenRouterLLM[]>>
 
   // WORKSPACE STORE
-  selectedWorkspace: Tables<"workspaces"> | null
-  setSelectedWorkspace: Dispatch<SetStateAction<Tables<"workspaces"> | null>>
+  selectedWorkspace: Workspace | null
+  setSelectedWorkspace: Dispatch<SetStateAction<Workspace | null>>
   workspaceImages: WorkspaceImage[]
   setWorkspaceImages: Dispatch<SetStateAction<WorkspaceImage[]>>
 
   // PRESET STORE
-  selectedPreset: Tables<"presets"> | null
-  setSelectedPreset: Dispatch<SetStateAction<Tables<"presets"> | null>>
+  selectedPreset: Preset | null
+  setSelectedPreset: Dispatch<SetStateAction<Preset | null>>
 
   // ASSISTANT STORE
-  selectedAssistant: Tables<"assistants"> | null
-  setSelectedAssistant: Dispatch<SetStateAction<Tables<"assistants"> | null>>
+  selectedAssistant: Assistant | null
+  setSelectedAssistant: Dispatch<SetStateAction<Assistant | null>>
   assistantImages: AssistantImage[]
   setAssistantImages: Dispatch<SetStateAction<AssistantImage[]>>
   openaiAssistants: any[]
@@ -74,10 +74,10 @@ interface ChatbotUIContext {
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>
   chatSettings: ChatSettings | null
   setChatSettings: Dispatch<SetStateAction<ChatSettings>>
-  selectedChat: Tables<"chats"> | null
-  setSelectedChat: Dispatch<SetStateAction<Tables<"chats"> | null>>
-  chatFileItems: Tables<"file_items">[]
-  setChatFileItems: Dispatch<SetStateAction<Tables<"file_items">[]>>
+  selectedChat: Chat | null
+  setSelectedChat: Dispatch<SetStateAction<Chat | null>>
+  chatFileItems: any[] // FileItem from Prisma
+  setChatFileItems: Dispatch<SetStateAction<any[]>>
 
   // ACTIVE CHAT STORE
   abortController: AbortController | null
@@ -132,8 +132,8 @@ interface ChatbotUIContext {
   setSourceCount: Dispatch<SetStateAction<number>>
 
   // TOOL STORE
-  selectedTools: Tables<"tools">[]
-  setSelectedTools: Dispatch<SetStateAction<Tables<"tools">[]>>
+  selectedTools: Tool[]
+  setSelectedTools: Dispatch<SetStateAction<Tool[]>>
   toolInUse: string
   setToolInUse: Dispatch<SetStateAction<string>>
 }

@@ -1,6 +1,6 @@
-import { Tables } from "@/supabase/types"
+import { Message } from "@/lib/generated/prisma"
 
 export interface ChatMessage {
-  message: Tables<"messages">
+  message: Message
   fileItems: string[]
 }

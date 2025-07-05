@@ -1,12 +1,30 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { Tables } from "@/supabase/types"
+import fs from 'fs'
+import path from 'path'
+import { promisify } from 'util'
+
+const writeFile = promisify(fs.writeFile)
+const unlink = promisify(fs.unlink)
+const mkdir = promisify(fs.mkdir)
+
+// Base storage directory
+const STORAGE_BASE_DIR = process.env.STORAGE_BASE_DIR || './storage'
+const PROFILE_IMAGES_DIR = path.join(STORAGE_BASE_DIR, 'profile_images')
+
+// Ensure storage directory exists
+const ensureStorageDir = async (dirPath: string) => {
+  try {
+    await mkdir(dirPath, { recursive: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      throw error
+    }
+  }
+}
 
 export const uploadProfileImage = async (
-  profile: Tables<"profiles">,
+  profile: { user_id: string; image_path: string },
   image: File
 ) => {
-  const bucket = "profile_images"
-
   const imageSizeLimit = 2000000 // 2MB
 
   if (image.size > imageSizeLimit) {
@@ -14,34 +32,39 @@ export const uploadProfileImage = async (
   }
 
   const currentPath = profile.image_path
-  let filePath = `${profile.user_id}/${Date.now()}`
+  const timestamp = Date.now()
+  const fileExtension = image.name.split('.').pop() || 'jpg'
+  const fileName = `${timestamp}.${fileExtension}`
+  const relativePath = `${profile.user_id}/${fileName}`
+  const userDir = path.join(PROFILE_IMAGES_DIR, profile.user_id)
+  const fullPath = path.join(userDir, fileName)
 
+  // Ensure directory exists
+  await ensureStorageDir(userDir)
+
+  // Delete old image if it exists
   if (currentPath.length > 0) {
-    const { error: deleteError } = await supabase.storage
-      .from(bucket)
-      .remove([currentPath])
-
-    if (deleteError) {
-      throw new Error("Error deleting old image")
+    const oldFullPath = path.join(PROFILE_IMAGES_DIR, currentPath)
+    try {
+      await unlink(oldFullPath)
+    } catch (error) {
+      // File might not exist, continue
+      console.warn('Could not delete old image:', error)
     }
   }
 
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, image, {
-      upsert: true
-    })
-
-  if (error) {
+  try {
+    // Convert File to Buffer
+    const buffer = await image.arrayBuffer()
+    await writeFile(fullPath, new Uint8Array(buffer))
+    
+    const publicUrl = `/api/storage/profile_images/${relativePath}`
+    
+    return {
+      path: relativePath,
+      url: publicUrl
+    }
+  } catch (error) {
     throw new Error("Error uploading image")
-  }
-
-  const { data: getPublicUrlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(filePath)
-
-  return {
-    path: filePath,
-    url: getPublicUrlData.publicUrl
   }
 }

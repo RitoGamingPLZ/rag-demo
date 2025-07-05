@@ -1,21 +1,21 @@
-import { Tables } from "@/supabase/types"
+import { Collection, Chat, Preset, Prompt, File, Assistant, Tool, Model } from "@/lib/generated/prisma"
 
 export type DataListType =
-  | Tables<"collections">[]
-  | Tables<"chats">[]
-  | Tables<"presets">[]
-  | Tables<"prompts">[]
-  | Tables<"files">[]
-  | Tables<"assistants">[]
-  | Tables<"tools">[]
-  | Tables<"models">[]
+  | Collection[]
+  | Chat[]
+  | Preset[]
+  | Prompt[]
+  | File[]
+  | Assistant[]
+  | Tool[]
+  | Model[]
 
 export type DataItemType =
-  | Tables<"collections">
-  | Tables<"chats">
-  | Tables<"presets">
-  | Tables<"prompts">
-  | Tables<"files">
-  | Tables<"assistants">
-  | Tables<"tools">
-  | Tables<"models">
+  | Collection
+  | Chat
+  | Preset
+  | Prompt
+  | File
+  | Assistant
+  | Tool
+  | Model

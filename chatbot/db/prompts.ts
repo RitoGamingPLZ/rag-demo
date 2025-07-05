@@ -1,76 +1,70 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getPromptById = async (promptId: string) => {
-  const { data: prompt, error } = await supabase
-    .from("prompts")
-    .select("*")
-    .eq("id", promptId)
-    .single()
+  const prompt = await prisma.prompt.findUnique({
+    where: { id: promptId }
+  })
 
   if (!prompt) {
-    throw new Error(error.message)
+    throw new Error("Prompt not found")
   }
 
   return prompt
 }
 
 export const getPromptWorkspacesByWorkspaceId = async (workspaceId: string) => {
-  const { data: workspace, error } = await supabase
-    .from("workspaces")
-    .select(
-      `
-      id,
-      name,
-      prompts (*)
-    `
-    )
-    .eq("id", workspaceId)
-    .single()
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      name: true,
+      promptWorkspaces: {
+        include: {
+          prompt: true
+        }
+      }
+    }
+  })
 
   if (!workspace) {
-    throw new Error(error.message)
+    throw new Error("Workspace not found")
   }
 
   return workspace
 }
 
 export const getPromptWorkspacesByPromptId = async (promptId: string) => {
-  const { data: prompt, error } = await supabase
-    .from("prompts")
-    .select(
-      `
-      id, 
-      name, 
-      workspaces (*)
-    `
-    )
-    .eq("id", promptId)
-    .single()
+  const prompt = await prisma.prompt.findUnique({
+    where: { id: promptId },
+    select: {
+      id: true,
+      name: true,
+      promptWorkspaces: {
+        include: {
+          workspace: true
+        }
+      }
+    }
+  })
 
   if (!prompt) {
-    throw new Error(error.message)
+    throw new Error("Prompt not found")
   }
 
   return prompt
 }
 
 export const createPrompt = async (
-  prompt: TablesInsert<"prompts">,
+  prompt: Prisma.PromptCreateInput,
   workspace_id: string
 ) => {
-  const { data: createdPrompt, error } = await supabase
-    .from("prompts")
-    .insert([prompt])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdPrompt = await prisma.prompt.create({
+    data: prompt
+  })
 
   await createPromptWorkspace({
-    user_id: createdPrompt.user_id,
+    user_id: createdPrompt.userId,
     prompt_id: createdPrompt.id,
     workspace_id
   })
@@ -79,27 +73,29 @@ export const createPrompt = async (
 }
 
 export const createPrompts = async (
-  prompts: TablesInsert<"prompts">[],
+  prompts: Prisma.PromptCreateManyInput[],
   workspace_id: string
 ) => {
-  const { data: createdPrompts, error } = await supabase
-    .from("prompts")
-    .insert(prompts)
-    .select("*")
+  const createdPrompts = await prisma.prompt.createMany({
+    data: prompts
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  // Note: createMany doesn't return the created records, so we need to fetch them
+  const promptRecords = await prisma.prompt.findMany({
+    where: {
+      id: { in: prompts.map(p => p.id) }
+    }
+  })
 
   await createPromptWorkspaces(
-    createdPrompts.map(prompt => ({
-      user_id: prompt.user_id,
+    promptRecords.map(prompt => ({
+      user_id: prompt.userId,
       prompt_id: prompt.id,
       workspace_id
     }))
   )
 
-  return createdPrompts
+  return promptRecords
 }
 
 export const createPromptWorkspace = async (item: {
@@ -107,15 +103,13 @@ export const createPromptWorkspace = async (item: {
   prompt_id: string
   workspace_id: string
 }) => {
-  const { data: createdPromptWorkspace, error } = await supabase
-    .from("prompt_workspaces")
-    .insert([item])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdPromptWorkspace = await prisma.promptWorkspace.create({
+    data: {
+      userId: item.user_id,
+      promptId: item.prompt_id,
+      workspaceId: item.workspace_id
+    }
+  })
 
   return createdPromptWorkspace
 }
@@ -123,40 +117,33 @@ export const createPromptWorkspace = async (item: {
 export const createPromptWorkspaces = async (
   items: { user_id: string; prompt_id: string; workspace_id: string }[]
 ) => {
-  const { data: createdPromptWorkspaces, error } = await supabase
-    .from("prompt_workspaces")
-    .insert(items)
-    .select("*")
-
-  if (error) throw new Error(error.message)
+  const createdPromptWorkspaces = await prisma.promptWorkspace.createMany({
+    data: items.map(item => ({
+      userId: item.user_id,
+      promptId: item.prompt_id,
+      workspaceId: item.workspace_id
+    }))
+  })
 
   return createdPromptWorkspaces
 }
 
 export const updatePrompt = async (
   promptId: string,
-  prompt: TablesUpdate<"prompts">
+  prompt: Prisma.PromptUpdateInput
 ) => {
-  const { data: updatedPrompt, error } = await supabase
-    .from("prompts")
-    .update(prompt)
-    .eq("id", promptId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedPrompt = await prisma.prompt.update({
+    where: { id: promptId },
+    data: prompt
+  })
 
   return updatedPrompt
 }
 
 export const deletePrompt = async (promptId: string) => {
-  const { error } = await supabase.from("prompts").delete().eq("id", promptId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.prompt.delete({
+    where: { id: promptId }
+  })
 
   return true
 }
@@ -165,13 +152,14 @@ export const deletePromptWorkspace = async (
   promptId: string,
   workspaceId: string
 ) => {
-  const { error } = await supabase
-    .from("prompt_workspaces")
-    .delete()
-    .eq("prompt_id", promptId)
-    .eq("workspace_id", workspaceId)
-
-  if (error) throw new Error(error.message)
+  await prisma.promptWorkspace.delete({
+    where: {
+      promptId_workspaceId: {
+        promptId,
+        workspaceId
+      }
+    }
+  })
 
   return true
 }

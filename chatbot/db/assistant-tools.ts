@@ -1,52 +1,43 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getAssistantToolsByAssistantId = async (assistantId: string) => {
-  const { data: assistantTools, error } = await supabase
-    .from("assistants")
-    .select(
-      `
-        id, 
-        name, 
-        tools (*)
-      `
-    )
-    .eq("id", assistantId)
-    .single()
+  const assistantTools = await prisma.assistant.findUnique({
+    where: { id: assistantId },
+    select: {
+      id: true,
+      name: true,
+      assistantTools: {
+        include: {
+          tool: true
+        }
+      }
+    }
+  })
 
   if (!assistantTools) {
-    throw new Error(error.message)
+    throw new Error("Assistant not found")
   }
 
   return assistantTools
 }
 
 export const createAssistantTool = async (
-  assistantTool: TablesInsert<"assistant_tools">
+  assistantTool: Prisma.AssistantToolCreateInput
 ) => {
-  const { data: createdAssistantTool, error } = await supabase
-    .from("assistant_tools")
-    .insert(assistantTool)
-    .select("*")
-
-  if (!createdAssistantTool) {
-    throw new Error(error.message)
-  }
+  const createdAssistantTool = await prisma.assistantTool.create({
+    data: assistantTool
+  })
 
   return createdAssistantTool
 }
 
 export const createAssistantTools = async (
-  assistantTools: TablesInsert<"assistant_tools">[]
+  assistantTools: Prisma.AssistantToolCreateManyInput[]
 ) => {
-  const { data: createdAssistantTools, error } = await supabase
-    .from("assistant_tools")
-    .insert(assistantTools)
-    .select("*")
-
-  if (!createdAssistantTools) {
-    throw new Error(error.message)
-  }
+  const createdAssistantTools = await prisma.assistantTool.createMany({
+    data: assistantTools
+  })
 
   return createdAssistantTools
 }
@@ -55,13 +46,14 @@ export const deleteAssistantTool = async (
   assistantId: string,
   toolId: string
 ) => {
-  const { error } = await supabase
-    .from("assistant_tools")
-    .delete()
-    .eq("assistant_id", assistantId)
-    .eq("tool_id", toolId)
-
-  if (error) throw new Error(error.message)
+  await prisma.assistantTool.delete({
+    where: {
+      assistantId_toolId: {
+        assistantId,
+        toolId
+      }
+    }
+  })
 
   return true
 }

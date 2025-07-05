@@ -1,76 +1,70 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getPresetById = async (presetId: string) => {
-  const { data: preset, error } = await supabase
-    .from("presets")
-    .select("*")
-    .eq("id", presetId)
-    .single()
+  const preset = await prisma.preset.findUnique({
+    where: { id: presetId }
+  })
 
   if (!preset) {
-    throw new Error(error.message)
+    throw new Error("Preset not found")
   }
 
   return preset
 }
 
 export const getPresetWorkspacesByWorkspaceId = async (workspaceId: string) => {
-  const { data: workspace, error } = await supabase
-    .from("workspaces")
-    .select(
-      `
-      id,
-      name,
-      presets (*)
-    `
-    )
-    .eq("id", workspaceId)
-    .single()
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      name: true,
+      presetWorkspaces: {
+        include: {
+          preset: true
+        }
+      }
+    }
+  })
 
   if (!workspace) {
-    throw new Error(error.message)
+    throw new Error("Workspace not found")
   }
 
   return workspace
 }
 
 export const getPresetWorkspacesByPresetId = async (presetId: string) => {
-  const { data: preset, error } = await supabase
-    .from("presets")
-    .select(
-      `
-      id, 
-      name, 
-      workspaces (*)
-    `
-    )
-    .eq("id", presetId)
-    .single()
+  const preset = await prisma.preset.findUnique({
+    where: { id: presetId },
+    select: {
+      id: true,
+      name: true,
+      presetWorkspaces: {
+        include: {
+          workspace: true
+        }
+      }
+    }
+  })
 
   if (!preset) {
-    throw new Error(error.message)
+    throw new Error("Preset not found")
   }
 
   return preset
 }
 
 export const createPreset = async (
-  preset: TablesInsert<"presets">,
+  preset: Prisma.PresetCreateInput,
   workspace_id: string
 ) => {
-  const { data: createdPreset, error } = await supabase
-    .from("presets")
-    .insert([preset])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdPreset = await prisma.preset.create({
+    data: preset
+  })
 
   await createPresetWorkspace({
-    user_id: preset.user_id,
+    user_id: createdPreset.userId,
     preset_id: createdPreset.id,
     workspace_id: workspace_id
   })
@@ -79,27 +73,29 @@ export const createPreset = async (
 }
 
 export const createPresets = async (
-  presets: TablesInsert<"presets">[],
+  presets: Prisma.PresetCreateManyInput[],
   workspace_id: string
 ) => {
-  const { data: createdPresets, error } = await supabase
-    .from("presets")
-    .insert(presets)
-    .select("*")
+  const createdPresets = await prisma.preset.createMany({
+    data: presets
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  // Note: createMany doesn't return the created records, so we need to fetch them
+  const presetRecords = await prisma.preset.findMany({
+    where: {
+      id: { in: presets.map(p => p.id) }
+    }
+  })
 
   await createPresetWorkspaces(
-    createdPresets.map(preset => ({
-      user_id: preset.user_id,
+    presetRecords.map(preset => ({
+      user_id: preset.userId,
       preset_id: preset.id,
       workspace_id
     }))
   )
 
-  return createdPresets
+  return presetRecords
 }
 
 export const createPresetWorkspace = async (item: {
@@ -107,15 +103,13 @@ export const createPresetWorkspace = async (item: {
   preset_id: string
   workspace_id: string
 }) => {
-  const { data: createdPresetWorkspace, error } = await supabase
-    .from("preset_workspaces")
-    .insert([item])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdPresetWorkspace = await prisma.presetWorkspace.create({
+    data: {
+      userId: item.user_id,
+      presetId: item.preset_id,
+      workspaceId: item.workspace_id
+    }
+  })
 
   return createdPresetWorkspace
 }
@@ -123,40 +117,33 @@ export const createPresetWorkspace = async (item: {
 export const createPresetWorkspaces = async (
   items: { user_id: string; preset_id: string; workspace_id: string }[]
 ) => {
-  const { data: createdPresetWorkspaces, error } = await supabase
-    .from("preset_workspaces")
-    .insert(items)
-    .select("*")
-
-  if (error) throw new Error(error.message)
+  const createdPresetWorkspaces = await prisma.presetWorkspace.createMany({
+    data: items.map(item => ({
+      userId: item.user_id,
+      presetId: item.preset_id,
+      workspaceId: item.workspace_id
+    }))
+  })
 
   return createdPresetWorkspaces
 }
 
 export const updatePreset = async (
   presetId: string,
-  preset: TablesUpdate<"presets">
+  preset: Prisma.PresetUpdateInput
 ) => {
-  const { data: updatedPreset, error } = await supabase
-    .from("presets")
-    .update(preset)
-    .eq("id", presetId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedPreset = await prisma.preset.update({
+    where: { id: presetId },
+    data: preset
+  })
 
   return updatedPreset
 }
 
 export const deletePreset = async (presetId: string) => {
-  const { error } = await supabase.from("presets").delete().eq("id", presetId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.preset.delete({
+    where: { id: presetId }
+  })
 
   return true
 }
@@ -165,13 +152,14 @@ export const deletePresetWorkspace = async (
   presetId: string,
   workspaceId: string
 ) => {
-  const { error } = await supabase
-    .from("preset_workspaces")
-    .delete()
-    .eq("preset_id", presetId)
-    .eq("workspace_id", workspaceId)
-
-  if (error) throw new Error(error.message)
+  await prisma.presetWorkspace.delete({
+    where: {
+      presetId_workspaceId: {
+        presetId,
+        workspaceId
+      }
+    }
+  })
 
   return true
 }

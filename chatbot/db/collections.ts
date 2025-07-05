@@ -1,15 +1,13 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getCollectionById = async (collectionId: string) => {
-  const { data: collection, error } = await supabase
-    .from("collections")
-    .select("*")
-    .eq("id", collectionId)
-    .single()
+  const collection = await prisma.collection.findUnique({
+    where: { id: collectionId }
+  })
 
   if (!collection) {
-    throw new Error(error.message)
+    throw new Error("Collection not found")
   }
 
   return collection
@@ -18,20 +16,21 @@ export const getCollectionById = async (collectionId: string) => {
 export const getCollectionWorkspacesByWorkspaceId = async (
   workspaceId: string
 ) => {
-  const { data: workspace, error } = await supabase
-    .from("workspaces")
-    .select(
-      `
-      id,
-      name,
-      collections (*)
-    `
-    )
-    .eq("id", workspaceId)
-    .single()
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      name: true,
+      collectionWorkspaces: {
+        include: {
+          collection: true
+        }
+      }
+    }
+  })
 
   if (!workspace) {
-    throw new Error(error.message)
+    throw new Error("Workspace not found")
   }
 
   return workspace
@@ -40,41 +39,36 @@ export const getCollectionWorkspacesByWorkspaceId = async (
 export const getCollectionWorkspacesByCollectionId = async (
   collectionId: string
 ) => {
-  const { data: collection, error } = await supabase
-    .from("collections")
-    .select(
-      `
-      id, 
-      name, 
-      workspaces (*)
-    `
-    )
-    .eq("id", collectionId)
-    .single()
+  const collection = await prisma.collection.findUnique({
+    where: { id: collectionId },
+    select: {
+      id: true,
+      name: true,
+      collectionWorkspaces: {
+        include: {
+          workspace: true
+        }
+      }
+    }
+  })
 
   if (!collection) {
-    throw new Error(error.message)
+    throw new Error("Collection not found")
   }
 
   return collection
 }
 
 export const createCollection = async (
-  collection: TablesInsert<"collections">,
+  collection: Prisma.CollectionCreateInput,
   workspace_id: string
 ) => {
-  const { data: createdCollection, error } = await supabase
-    .from("collections")
-    .insert([collection])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdCollection = await prisma.collection.create({
+    data: collection
+  })
 
   await createCollectionWorkspace({
-    user_id: createdCollection.user_id,
+    user_id: createdCollection.userId,
     collection_id: createdCollection.id,
     workspace_id
   })
@@ -83,27 +77,29 @@ export const createCollection = async (
 }
 
 export const createCollections = async (
-  collections: TablesInsert<"collections">[],
+  collections: Prisma.CollectionCreateManyInput[],
   workspace_id: string
 ) => {
-  const { data: createdCollections, error } = await supabase
-    .from("collections")
-    .insert(collections)
-    .select("*")
+  const createdCollections = await prisma.collection.createMany({
+    data: collections
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  // Note: createMany doesn't return the created records, so we need to fetch them
+  const collectionRecords = await prisma.collection.findMany({
+    where: {
+      id: { in: collections.map(c => c.id) }
+    }
+  })
 
   await createCollectionWorkspaces(
-    createdCollections.map(collection => ({
-      user_id: collection.user_id,
+    collectionRecords.map(collection => ({
+      user_id: collection.userId,
       collection_id: collection.id,
       workspace_id
     }))
   )
 
-  return createdCollections
+  return collectionRecords
 }
 
 export const createCollectionWorkspace = async (item: {
@@ -111,15 +107,13 @@ export const createCollectionWorkspace = async (item: {
   collection_id: string
   workspace_id: string
 }) => {
-  const { data: createdCollectionWorkspace, error } = await supabase
-    .from("collection_workspaces")
-    .insert([item])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdCollectionWorkspace = await prisma.collectionWorkspace.create({
+    data: {
+      userId: item.user_id,
+      collectionId: item.collection_id,
+      workspaceId: item.workspace_id
+    }
+  })
 
   return createdCollectionWorkspace
 }
@@ -127,43 +121,33 @@ export const createCollectionWorkspace = async (item: {
 export const createCollectionWorkspaces = async (
   items: { user_id: string; collection_id: string; workspace_id: string }[]
 ) => {
-  const { data: createdCollectionWorkspaces, error } = await supabase
-    .from("collection_workspaces")
-    .insert(items)
-    .select("*")
-
-  if (error) throw new Error(error.message)
+  const createdCollectionWorkspaces = await prisma.collectionWorkspace.createMany({
+    data: items.map(item => ({
+      userId: item.user_id,
+      collectionId: item.collection_id,
+      workspaceId: item.workspace_id
+    }))
+  })
 
   return createdCollectionWorkspaces
 }
 
 export const updateCollection = async (
   collectionId: string,
-  collection: TablesUpdate<"collections">
+  collection: Prisma.CollectionUpdateInput
 ) => {
-  const { data: updatedCollection, error } = await supabase
-    .from("collections")
-    .update(collection)
-    .eq("id", collectionId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedCollection = await prisma.collection.update({
+    where: { id: collectionId },
+    data: collection
+  })
 
   return updatedCollection
 }
 
 export const deleteCollection = async (collectionId: string) => {
-  const { error } = await supabase
-    .from("collections")
-    .delete()
-    .eq("id", collectionId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.collection.delete({
+    where: { id: collectionId }
+  })
 
   return true
 }
@@ -172,13 +156,14 @@ export const deleteCollectionWorkspace = async (
   collectionId: string,
   workspaceId: string
 ) => {
-  const { error } = await supabase
-    .from("collection_workspaces")
-    .delete()
-    .eq("collection_id", collectionId)
-    .eq("workspace_id", workspaceId)
-
-  if (error) throw new Error(error.message)
+  await prisma.collectionWorkspace.delete({
+    where: {
+      collectionId_workspaceId: {
+        collectionId,
+        workspaceId
+      }
+    }
+  })
 
   return true
 }

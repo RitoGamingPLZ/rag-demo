@@ -1,54 +1,45 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getAssistantCollectionsByAssistantId = async (
   assistantId: string
 ) => {
-  const { data: assistantCollections, error } = await supabase
-    .from("assistants")
-    .select(
-      `
-        id, 
-        name, 
-        collections (*)
-      `
-    )
-    .eq("id", assistantId)
-    .single()
+  const assistantCollections = await prisma.assistant.findUnique({
+    where: { id: assistantId },
+    select: {
+      id: true,
+      name: true,
+      assistantCollections: {
+        include: {
+          collection: true
+        }
+      }
+    }
+  })
 
   if (!assistantCollections) {
-    throw new Error(error.message)
+    throw new Error("Assistant not found")
   }
 
   return assistantCollections
 }
 
 export const createAssistantCollection = async (
-  assistantCollection: TablesInsert<"assistant_collections">
+  assistantCollection: Prisma.AssistantCollectionCreateInput
 ) => {
-  const { data: createdAssistantCollection, error } = await supabase
-    .from("assistant_collections")
-    .insert(assistantCollection)
-    .select("*")
-
-  if (!createdAssistantCollection) {
-    throw new Error(error.message)
-  }
+  const createdAssistantCollection = await prisma.assistantCollection.create({
+    data: assistantCollection
+  })
 
   return createdAssistantCollection
 }
 
 export const createAssistantCollections = async (
-  assistantCollections: TablesInsert<"assistant_collections">[]
+  assistantCollections: Prisma.AssistantCollectionCreateManyInput[]
 ) => {
-  const { data: createdAssistantCollections, error } = await supabase
-    .from("assistant_collections")
-    .insert(assistantCollections)
-    .select("*")
-
-  if (!createdAssistantCollections) {
-    throw new Error(error.message)
-  }
+  const createdAssistantCollections = await prisma.assistantCollection.createMany({
+    data: assistantCollections
+  })
 
   return createdAssistantCollections
 }
@@ -57,13 +48,14 @@ export const deleteAssistantCollection = async (
   assistantId: string,
   collectionId: string
 ) => {
-  const { error } = await supabase
-    .from("assistant_collections")
-    .delete()
-    .eq("assistant_id", assistantId)
-    .eq("collection_id", collectionId)
-
-  if (error) throw new Error(error.message)
+  await prisma.assistantCollection.delete({
+    where: {
+      assistantId_collectionId: {
+        assistantId,
+        collectionId
+      }
+    }
+  })
 
   return true
 }

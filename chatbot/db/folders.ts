@@ -1,57 +1,38 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getFoldersByWorkspaceId = async (workspaceId: string) => {
-  const { data: folders, error } = await supabase
-    .from("folders")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-
-  if (!folders) {
-    throw new Error(error.message)
-  }
+  const folders = await prisma.folder.findMany({
+    where: { workspaceId }
+  })
 
   return folders
 }
 
-export const createFolder = async (folder: TablesInsert<"folders">) => {
-  const { data: createdFolder, error } = await supabase
-    .from("folders")
-    .insert([folder])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+export const createFolder = async (folder: Prisma.FolderCreateInput) => {
+  const createdFolder = await prisma.folder.create({
+    data: folder
+  })
 
   return createdFolder
 }
 
 export const updateFolder = async (
   folderId: string,
-  folder: TablesUpdate<"folders">
+  folder: Prisma.FolderUpdateInput
 ) => {
-  const { data: updatedFolder, error } = await supabase
-    .from("folders")
-    .update(folder)
-    .eq("id", folderId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedFolder = await prisma.folder.update({
+    where: { id: folderId },
+    data: folder
+  })
 
   return updatedFolder
 }
 
 export const deleteFolder = async (folderId: string) => {
-  const { error } = await supabase.from("folders").delete().eq("id", folderId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.folder.delete({
+    where: { id: folderId }
+  })
 
   return true
 }

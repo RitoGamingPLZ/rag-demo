@@ -1,4 +1,4 @@
-import { Tables } from "@/supabase/types"
+import { Assistant, FileItem, Message } from "@/lib/generated/prisma"
 import { ChatMessage, LLMID } from "."
 
 export interface ChatSettings {
@@ -15,12 +15,12 @@ export interface ChatPayload {
   chatSettings: ChatSettings
   workspaceInstructions: string
   chatMessages: ChatMessage[]
-  assistant: Tables<"assistants"> | null
-  messageFileItems: Tables<"file_items">[]
-  chatFileItems: Tables<"file_items">[]
+  assistant: Assistant | null
+  messageFileItems: FileItem[]
+  chatFileItems: FileItem[]
 }
 
 export interface ChatAPIPayload {
   chatSettings: ChatSettings
-  messages: Tables<"messages">[]
+  messages: Message[]
 }

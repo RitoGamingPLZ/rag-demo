@@ -1,58 +1,56 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 import mammoth from "mammoth"
 import { toast } from "sonner"
 import { uploadFile } from "./storage/files"
 
 export const getFileById = async (fileId: string) => {
-  const { data: file, error } = await supabase
-    .from("files")
-    .select("*")
-    .eq("id", fileId)
-    .single()
+  const file = await prisma.file.findUnique({
+    where: { id: fileId }
+  })
 
   if (!file) {
-    throw new Error(error.message)
+    throw new Error("File not found")
   }
 
   return file
 }
 
 export const getFileWorkspacesByWorkspaceId = async (workspaceId: string) => {
-  const { data: workspace, error } = await supabase
-    .from("workspaces")
-    .select(
-      `
-      id,
-      name,
-      files (*)
-    `
-    )
-    .eq("id", workspaceId)
-    .single()
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      name: true,
+      fileWorkspaces: {
+        include: {
+          file: true
+        }
+      }
+    }
+  })
 
   if (!workspace) {
-    throw new Error(error.message)
+    throw new Error("Workspace not found")
   }
 
   return workspace
 }
 
 export const getFileWorkspacesByFileId = async (fileId: string) => {
-  const { data: file, error } = await supabase
-    .from("files")
-    .select(
-      `
-      id, 
-      name, 
-      workspaces (*)
-    `
-    )
-    .eq("id", fileId)
-    .single()
+  const file = await prisma.file.findUnique({
+    where: { id: fileId },
+    include: {
+      fileWorkspaces: {
+        include: {
+          workspace: true
+        }
+      }
+    }
+  })
 
   if (!file) {
-    throw new Error(error.message)
+    throw new Error("File not found")
   }
 
   return file
@@ -60,7 +58,7 @@ export const getFileWorkspacesByFileId = async (fileId: string) => {
 
 export const createFileBasedOnExtension = async (
   file: File,
-  fileRecord: TablesInsert<"files">,
+  fileRecord: Prisma.FileCreateInput,
   workspace_id: string,
   embeddingsProvider: "openai" | "local"
 ) => {
@@ -87,7 +85,7 @@ export const createFileBasedOnExtension = async (
 // For non-docx files
 export const createFile = async (
   file: File,
-  fileRecord: TablesInsert<"files">,
+  fileRecord: Prisma.FileCreateInput,
   workspace_id: string,
   embeddingsProvider: "openai" | "local"
 ) => {
@@ -101,30 +99,25 @@ export const createFile = async (
   } else {
     fileRecord.name = baseName + "." + extension
   }
-  const { data: createdFile, error } = await supabase
-    .from("files")
-    .insert([fileRecord])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  
+  const createdFile = await prisma.file.create({
+    data: fileRecord
+  })
 
   await createFileWorkspace({
-    user_id: createdFile.user_id,
-    file_id: createdFile.id,
-    workspace_id
+    userId: createdFile.userId,
+    fileId: createdFile.id,
+    workspaceId: workspace_id
   })
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
-    user_id: createdFile.user_id,
-    file_id: createdFile.name
+    userId: createdFile.userId,
+    fileId: createdFile.name
   })
 
   await updateFile(createdFile.id, {
-    file_path: filePath
+    filePath: filePath
   })
 
   const formData = new FormData()
@@ -153,38 +146,32 @@ export const createFile = async (
   return fetchedFile
 }
 
-// // Handle docx files
+// Handle docx files
 export const createDocXFile = async (
   text: string,
   file: File,
-  fileRecord: TablesInsert<"files">,
+  fileRecord: Prisma.FileCreateInput,
   workspace_id: string,
   embeddingsProvider: "openai" | "local"
 ) => {
-  const { data: createdFile, error } = await supabase
-    .from("files")
-    .insert([fileRecord])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdFile = await prisma.file.create({
+    data: fileRecord
+  })
 
   await createFileWorkspace({
-    user_id: createdFile.user_id,
-    file_id: createdFile.id,
-    workspace_id
+    userId: createdFile.userId,
+    fileId: createdFile.id,
+    workspaceId: workspace_id
   })
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
-    user_id: createdFile.user_id,
-    file_id: createdFile.name
+    userId: createdFile.userId,
+    fileId: createdFile.name
   })
 
   await updateFile(createdFile.id, {
-    file_path: filePath
+    filePath: filePath
   })
 
   const response = await fetch("/api/retrieval/process/docx", {
@@ -218,84 +205,70 @@ export const createDocXFile = async (
 }
 
 export const createFiles = async (
-  files: TablesInsert<"files">[],
+  files: Prisma.FileCreateManyInput[],
   workspace_id: string
 ) => {
-  const { data: createdFiles, error } = await supabase
-    .from("files")
-    .insert(files)
-    .select("*")
+  const createdFiles = await prisma.file.createMany({
+    data: files
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  // Get the created files to have their IDs
+  const fileList = await prisma.file.findMany({
+    where: {
+      userId: files[0]?.userId,
+      name: { in: files.map(f => f.name) }
+    }
+  })
 
   await createFileWorkspaces(
-    createdFiles.map(file => ({
-      user_id: file.user_id,
-      file_id: file.id,
-      workspace_id
+    fileList.map(file => ({
+      userId: file.userId,
+      fileId: file.id,
+      workspaceId: workspace_id
     }))
   )
 
-  return createdFiles
+  return fileList
 }
 
 export const createFileWorkspace = async (item: {
-  user_id: string
-  file_id: string
-  workspace_id: string
+  userId: string
+  fileId: string
+  workspaceId: string
 }) => {
-  const { data: createdFileWorkspace, error } = await supabase
-    .from("file_workspaces")
-    .insert([item])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdFileWorkspace = await prisma.fileWorkspace.create({
+    data: item
+  })
 
   return createdFileWorkspace
 }
 
 export const createFileWorkspaces = async (
-  items: { user_id: string; file_id: string; workspace_id: string }[]
+  items: { userId: string; fileId: string; workspaceId: string }[]
 ) => {
-  const { data: createdFileWorkspaces, error } = await supabase
-    .from("file_workspaces")
-    .insert(items)
-    .select("*")
-
-  if (error) throw new Error(error.message)
+  const createdFileWorkspaces = await prisma.fileWorkspace.createMany({
+    data: items
+  })
 
   return createdFileWorkspaces
 }
 
 export const updateFile = async (
   fileId: string,
-  file: TablesUpdate<"files">
+  file: Prisma.FileUpdateInput
 ) => {
-  const { data: updatedFile, error } = await supabase
-    .from("files")
-    .update(file)
-    .eq("id", fileId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedFile = await prisma.file.update({
+    where: { id: fileId },
+    data: file
+  })
 
   return updatedFile
 }
 
 export const deleteFile = async (fileId: string) => {
-  const { error } = await supabase.from("files").delete().eq("id", fileId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.file.delete({
+    where: { id: fileId }
+  })
 
   return true
 }
@@ -304,13 +277,14 @@ export const deleteFileWorkspace = async (
   fileId: string,
   workspaceId: string
 ) => {
-  const { error } = await supabase
-    .from("file_workspaces")
-    .delete()
-    .eq("file_id", fileId)
-    .eq("workspace_id", workspaceId)
-
-  if (error) throw new Error(error.message)
+  await prisma.fileWorkspace.delete({
+    where: {
+      fileId_workspaceId: {
+        fileId,
+        workspaceId
+      }
+    }
+  })
 
   return true
 }

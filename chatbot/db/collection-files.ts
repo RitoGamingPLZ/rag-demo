@@ -1,54 +1,51 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getCollectionFilesByCollectionId = async (
   collectionId: string
 ) => {
-  const { data: collectionFiles, error } = await supabase
-    .from("collections")
-    .select(
-      `
-        id, 
-        name, 
-        files ( id, name, type )
-      `
-    )
-    .eq("id", collectionId)
-    .single()
+  const collectionFiles = await prisma.collection.findUnique({
+    where: { id: collectionId },
+    select: {
+      id: true,
+      name: true,
+      files: {
+        include: {
+          file: {
+            select: {
+              id: true,
+              name: true,
+              type: true
+            }
+          }
+        }
+      }
+    }
+  })
 
   if (!collectionFiles) {
-    throw new Error(error.message)
+    throw new Error("Collection not found")
   }
 
   return collectionFiles
 }
 
 export const createCollectionFile = async (
-  collectionFile: TablesInsert<"collection_files">
+  collectionFile: Prisma.CollectionFileCreateInput
 ) => {
-  const { data: createdCollectionFile, error } = await supabase
-    .from("collection_files")
-    .insert(collectionFile)
-    .select("*")
-
-  if (!createdCollectionFile) {
-    throw new Error(error.message)
-  }
+  const createdCollectionFile = await prisma.collectionFile.create({
+    data: collectionFile
+  })
 
   return createdCollectionFile
 }
 
 export const createCollectionFiles = async (
-  collectionFiles: TablesInsert<"collection_files">[]
+  collectionFiles: Prisma.CollectionFileCreateManyInput[]
 ) => {
-  const { data: createdCollectionFiles, error } = await supabase
-    .from("collection_files")
-    .insert(collectionFiles)
-    .select("*")
-
-  if (!createdCollectionFiles) {
-    throw new Error(error.message)
-  }
+  const createdCollectionFiles = await prisma.collectionFile.createMany({
+    data: collectionFiles
+  })
 
   return createdCollectionFiles
 }
@@ -57,13 +54,14 @@ export const deleteCollectionFile = async (
   collectionId: string,
   fileId: string
 ) => {
-  const { error } = await supabase
-    .from("collection_files")
-    .delete()
-    .eq("collection_id", collectionId)
-    .eq("file_id", fileId)
-
-  if (error) throw new Error(error.message)
+  await prisma.collectionFile.delete({
+    where: {
+      collectionId_fileId: {
+        collectionId,
+        fileId
+      }
+    }
+  })
 
   return true
 }

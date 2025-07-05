@@ -1,52 +1,43 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getAssistantFilesByAssistantId = async (assistantId: string) => {
-  const { data: assistantFiles, error } = await supabase
-    .from("assistants")
-    .select(
-      `
-        id, 
-        name, 
-        files (*)
-      `
-    )
-    .eq("id", assistantId)
-    .single()
+  const assistantFiles = await prisma.assistant.findUnique({
+    where: { id: assistantId },
+    select: {
+      id: true,
+      name: true,
+      files: {
+        include: {
+          file: true
+        }
+      }
+    }
+  })
 
   if (!assistantFiles) {
-    throw new Error(error.message)
+    throw new Error("Assistant not found")
   }
 
   return assistantFiles
 }
 
 export const createAssistantFile = async (
-  assistantFile: TablesInsert<"assistant_files">
+  assistantFile: Prisma.AssistantFileCreateInput
 ) => {
-  const { data: createdAssistantFile, error } = await supabase
-    .from("assistant_files")
-    .insert(assistantFile)
-    .select("*")
-
-  if (!createdAssistantFile) {
-    throw new Error(error.message)
-  }
+  const createdAssistantFile = await prisma.assistantFile.create({
+    data: assistantFile
+  })
 
   return createdAssistantFile
 }
 
 export const createAssistantFiles = async (
-  assistantFiles: TablesInsert<"assistant_files">[]
+  assistantFiles: Prisma.AssistantFileCreateManyInput[]
 ) => {
-  const { data: createdAssistantFiles, error } = await supabase
-    .from("assistant_files")
-    .insert(assistantFiles)
-    .select("*")
-
-  if (!createdAssistantFiles) {
-    throw new Error(error.message)
-  }
+  const createdAssistantFiles = await prisma.assistantFile.createMany({
+    data: assistantFiles
+  })
 
   return createdAssistantFiles
 }
@@ -55,13 +46,14 @@ export const deleteAssistantFile = async (
   assistantId: string,
   fileId: string
 ) => {
-  const { error } = await supabase
-    .from("assistant_files")
-    .delete()
-    .eq("assistant_id", assistantId)
-    .eq("file_id", fileId)
-
-  if (error) throw new Error(error.message)
+  await prisma.assistantFile.delete({
+    where: {
+      assistantId_fileId: {
+        assistantId,
+        fileId
+      }
+    }
+  })
 
   return true
 }

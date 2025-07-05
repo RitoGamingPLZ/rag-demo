@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
@@ -8,9 +7,15 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get("next")
 
   if (code) {
+    // Placeholder for auth callback handling
+    // In a real implementation, you would exchange the code for a session
     const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-    await supabase.auth.exchangeCodeForSession(code)
+    cookieStore.set('session', 'placeholder-session', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
   }
 
   if (next) {

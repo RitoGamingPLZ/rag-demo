@@ -1,15 +1,13 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getAssistantById = async (assistantId: string) => {
-  const { data: assistant, error } = await supabase
-    .from("assistants")
-    .select("*")
-    .eq("id", assistantId)
-    .single()
+  const assistant = await prisma.assistant.findUnique({
+    where: { id: assistantId }
+  })
 
   if (!assistant) {
-    throw new Error(error.message)
+    throw new Error("Assistant not found")
   }
 
   return assistant
@@ -18,20 +16,21 @@ export const getAssistantById = async (assistantId: string) => {
 export const getAssistantWorkspacesByWorkspaceId = async (
   workspaceId: string
 ) => {
-  const { data: workspace, error } = await supabase
-    .from("workspaces")
-    .select(
-      `
-      id,
-      name,
-      assistants (*)
-    `
-    )
-    .eq("id", workspaceId)
-    .single()
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      name: true,
+      assistantWorkspaces: {
+        include: {
+          assistant: true
+        }
+      }
+    }
+  })
 
   if (!workspace) {
-    throw new Error(error.message)
+    throw new Error("Workspace not found")
   }
 
   return workspace
@@ -40,41 +39,36 @@ export const getAssistantWorkspacesByWorkspaceId = async (
 export const getAssistantWorkspacesByAssistantId = async (
   assistantId: string
 ) => {
-  const { data: assistant, error } = await supabase
-    .from("assistants")
-    .select(
-      `
-      id, 
-      name, 
-      workspaces (*)
-    `
-    )
-    .eq("id", assistantId)
-    .single()
+  const assistant = await prisma.assistant.findUnique({
+    where: { id: assistantId },
+    select: {
+      id: true,
+      name: true,
+      assistantWorkspaces: {
+        include: {
+          workspace: true
+        }
+      }
+    }
+  })
 
   if (!assistant) {
-    throw new Error(error.message)
+    throw new Error("Assistant not found")
   }
 
   return assistant
 }
 
 export const createAssistant = async (
-  assistant: TablesInsert<"assistants">,
+  assistant: Prisma.AssistantCreateInput,
   workspace_id: string
 ) => {
-  const { data: createdAssistant, error } = await supabase
-    .from("assistants")
-    .insert([assistant])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdAssistant = await prisma.assistant.create({
+    data: assistant
+  })
 
   await createAssistantWorkspace({
-    user_id: createdAssistant.user_id,
+    user_id: createdAssistant.userId,
     assistant_id: createdAssistant.id,
     workspace_id
   })
@@ -83,27 +77,29 @@ export const createAssistant = async (
 }
 
 export const createAssistants = async (
-  assistants: TablesInsert<"assistants">[],
+  assistants: Prisma.AssistantCreateManyInput[],
   workspace_id: string
 ) => {
-  const { data: createdAssistants, error } = await supabase
-    .from("assistants")
-    .insert(assistants)
-    .select("*")
+  const createdAssistants = await prisma.assistant.createMany({
+    data: assistants
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  // Note: createMany doesn't return the created records, so we need to fetch them
+  const assistantRecords = await prisma.assistant.findMany({
+    where: {
+      id: { in: assistants.map(a => a.id) }
+    }
+  })
 
   await createAssistantWorkspaces(
-    createdAssistants.map(assistant => ({
-      user_id: assistant.user_id,
+    assistantRecords.map(assistant => ({
+      user_id: assistant.userId,
       assistant_id: assistant.id,
       workspace_id
     }))
   )
 
-  return createdAssistants
+  return assistantRecords
 }
 
 export const createAssistantWorkspace = async (item: {
@@ -111,15 +107,13 @@ export const createAssistantWorkspace = async (item: {
   assistant_id: string
   workspace_id: string
 }) => {
-  const { data: createdAssistantWorkspace, error } = await supabase
-    .from("assistant_workspaces")
-    .insert([item])
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const createdAssistantWorkspace = await prisma.assistantWorkspace.create({
+    data: {
+      userId: item.user_id,
+      assistantId: item.assistant_id,
+      workspaceId: item.workspace_id
+    }
+  })
 
   return createdAssistantWorkspace
 }
@@ -127,43 +121,33 @@ export const createAssistantWorkspace = async (item: {
 export const createAssistantWorkspaces = async (
   items: { user_id: string; assistant_id: string; workspace_id: string }[]
 ) => {
-  const { data: createdAssistantWorkspaces, error } = await supabase
-    .from("assistant_workspaces")
-    .insert(items)
-    .select("*")
-
-  if (error) throw new Error(error.message)
+  const createdAssistantWorkspaces = await prisma.assistantWorkspace.createMany({
+    data: items.map(item => ({
+      userId: item.user_id,
+      assistantId: item.assistant_id,
+      workspaceId: item.workspace_id
+    }))
+  })
 
   return createdAssistantWorkspaces
 }
 
 export const updateAssistant = async (
   assistantId: string,
-  assistant: TablesUpdate<"assistants">
+  assistant: Prisma.AssistantUpdateInput
 ) => {
-  const { data: updatedAssistant, error } = await supabase
-    .from("assistants")
-    .update(assistant)
-    .eq("id", assistantId)
-    .select("*")
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const updatedAssistant = await prisma.assistant.update({
+    where: { id: assistantId },
+    data: assistant
+  })
 
   return updatedAssistant
 }
 
 export const deleteAssistant = async (assistantId: string) => {
-  const { error } = await supabase
-    .from("assistants")
-    .delete()
-    .eq("id", assistantId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  await prisma.assistant.delete({
+    where: { id: assistantId }
+  })
 
   return true
 }
@@ -172,13 +156,14 @@ export const deleteAssistantWorkspace = async (
   assistantId: string,
   workspaceId: string
 ) => {
-  const { error } = await supabase
-    .from("assistant_workspaces")
-    .delete()
-    .eq("assistant_id", assistantId)
-    .eq("workspace_id", workspaceId)
-
-  if (error) throw new Error(error.message)
+  await prisma.assistantWorkspace.delete({
+    where: {
+      assistantId_workspaceId: {
+        assistantId,
+        workspaceId
+      }
+    }
+  })
 
   return true
 }

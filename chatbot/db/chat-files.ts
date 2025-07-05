@@ -1,50 +1,41 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert } from "@/supabase/types"
+import { prisma } from "@/lib/prisma/client"
+import { Prisma } from "@/lib/generated/prisma"
 
 export const getChatFilesByChatId = async (chatId: string) => {
-  const { data: chatFiles, error } = await supabase
-    .from("chats")
-    .select(
-      `
-      id, 
-      name, 
-      files (*)
-    `
-    )
-    .eq("id", chatId)
-    .single()
+  const chatFiles = await prisma.chat.findUnique({
+    where: { id: chatId },
+    select: {
+      id: true,
+      name: true,
+      files: {
+        include: {
+          file: true
+        }
+      }
+    }
+  })
 
   if (!chatFiles) {
-    throw new Error(error.message)
+    throw new Error("Chat not found")
   }
 
   return chatFiles
 }
 
-export const createChatFile = async (chatFile: TablesInsert<"chat_files">) => {
-  const { data: createdChatFile, error } = await supabase
-    .from("chat_files")
-    .insert(chatFile)
-    .select("*")
-
-  if (!createdChatFile) {
-    throw new Error(error.message)
-  }
+export const createChatFile = async (chatFile: Prisma.ChatFileCreateInput) => {
+  const createdChatFile = await prisma.chatFile.create({
+    data: chatFile
+  })
 
   return createdChatFile
 }
 
 export const createChatFiles = async (
-  chatFiles: TablesInsert<"chat_files">[]
+  chatFiles: Prisma.ChatFileCreateManyInput[]
 ) => {
-  const { data: createdChatFiles, error } = await supabase
-    .from("chat_files")
-    .insert(chatFiles)
-    .select("*")
-
-  if (!createdChatFiles) {
-    throw new Error(error.message)
-  }
+  const createdChatFiles = await prisma.chatFile.createMany({
+    data: chatFiles
+  })
 
   return createdChatFiles
 }
