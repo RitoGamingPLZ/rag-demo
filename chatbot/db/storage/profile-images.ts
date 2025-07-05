@@ -22,7 +22,7 @@ const ensureStorageDir = async (dirPath: string) => {
 }
 
 export const uploadProfileImage = async (
-  profile: { user_id: string; image_path: string },
+  profile: { userId: string; imagePath: string },
   image: File
 ) => {
   const imageSizeLimit = 2000000 // 2MB
@@ -31,12 +31,12 @@ export const uploadProfileImage = async (
     throw new Error(`Image must be less than ${imageSizeLimit / 1000000}MB`)
   }
 
-  const currentPath = profile.image_path
+  const currentPath = profile.imagePath
   const timestamp = Date.now()
   const fileExtension = image.name.split('.').pop() || 'jpg'
   const fileName = `${timestamp}.${fileExtension}`
-  const relativePath = `${profile.user_id}/${fileName}`
-  const userDir = path.join(PROFILE_IMAGES_DIR, profile.user_id)
+  const relativePath = `${profile.userId}/${fileName}`
+  const userDir = path.join(PROFILE_IMAGES_DIR, profile.userId)
   const fullPath = path.join(userDir, fileName)
 
   // Ensure directory exists

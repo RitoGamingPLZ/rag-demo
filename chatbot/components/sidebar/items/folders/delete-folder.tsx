@@ -10,15 +10,15 @@ import {
 } from "@/components/ui/dialog"
 import { ChatbotUIContext } from "@/context/context"
 import { deleteFolder } from "@/db/folders"
-import { supabase } from "@/lib/supabase/browser-client"
-import { Tables } from "@/supabase/types"
 import { ContentType } from "@/types"
 import { IconTrash } from "@tabler/icons-react"
 import { FC, useContext, useRef, useState } from "react"
 import { toast } from "sonner"
+import { Folder } from "@/lib/generated/prisma"
+import { prisma } from "@/lib/prisma/client"
 
 interface DeleteFolderProps {
-  folder: Tables<"folders">
+  folder: Folder
   contentType: ContentType
 }
 
@@ -83,15 +83,15 @@ export const DeleteFolder: FC<DeleteFolderProps> = ({
 
     if (!setStateFunction) return
 
-    const { error } = await supabase
-      .from(contentType)
-      .delete()
-      .eq("folder_id", folder.id)
 
-    if (error) {
-      toast.error(error.message)
-    }
-
+    await prisma.folder.delete({
+      where: { id: folder.id}
+    }).catch(e => {
+      if (e) {
+        toast.error(e.message)
+      }
+    })
+    
     setStateFunction((prevItems: any) =>
       prevItems.filter((item: any) => item.folder_id !== folder.id)
     )

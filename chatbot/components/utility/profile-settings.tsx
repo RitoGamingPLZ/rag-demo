@@ -10,7 +10,7 @@ import { uploadProfileImage } from "@/db/storage/profile-images"
 import { exportLocalStorageAsJSON } from "@/lib/export-old-data"
 import { fetchOpenRouterModels } from "@/lib/models/fetch-models"
 import { LLM_LIST_MAP } from "@/lib/models/llm/llm-list"
-import { supabase } from "@/lib/supabase/browser-client"
+// import { supabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
 import { OpenRouterLLM } from "@/types"
 import {
@@ -61,65 +61,65 @@ export const ProfileSettings: FC<ProfileSettingsProps> = ({}) => {
 
   const [isOpen, setIsOpen] = useState(false)
 
-  const [displayName, setDisplayName] = useState(profile?.display_name || "")
+  const [displayName, setDisplayName] = useState(profile?.displayName || "")
   const [username, setUsername] = useState(profile?.username || "")
   const [usernameAvailable, setUsernameAvailable] = useState(true)
   const [loadingUsername, setLoadingUsername] = useState(false)
   const [profileImageSrc, setProfileImageSrc] = useState(
-    profile?.image_url || ""
+    profile?.imageUrl || ""
   )
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileInstructions, setProfileInstructions] = useState(
-    profile?.profile_context || ""
+    profile?.profileContext || ""
   )
 
   const [useAzureOpenai, setUseAzureOpenai] = useState(
-    profile?.use_azure_openai
+    profile?.useAzureOpenai
   )
   const [openaiAPIKey, setOpenaiAPIKey] = useState(
-    profile?.openai_api_key || ""
+    profile?.openaiApiKey || ""
   )
   const [openaiOrgID, setOpenaiOrgID] = useState(
-    profile?.openai_organization_id || ""
+    profile?.openaiOrganizationId || ""
   )
   const [azureOpenaiAPIKey, setAzureOpenaiAPIKey] = useState(
-    profile?.azure_openai_api_key || ""
+    profile?.azureOpenaiApiKey || ""
   )
   const [azureOpenaiEndpoint, setAzureOpenaiEndpoint] = useState(
-    profile?.azure_openai_endpoint || ""
+    profile?.azureOpenaiEndpoint || ""
   )
   const [azureOpenai35TurboID, setAzureOpenai35TurboID] = useState(
-    profile?.azure_openai_35_turbo_id || ""
+    profile?.azureOpenai35TurboId || ""
   )
   const [azureOpenai45TurboID, setAzureOpenai45TurboID] = useState(
-    profile?.azure_openai_45_turbo_id || ""
+    profile?.azureOpenai45TurboId || ""
   )
   const [azureOpenai45VisionID, setAzureOpenai45VisionID] = useState(
-    profile?.azure_openai_45_vision_id || ""
+    profile?.azureOpenai45VisionId || ""
   )
   const [azureEmbeddingsID, setAzureEmbeddingsID] = useState(
-    profile?.azure_openai_embeddings_id || ""
+    profile?.azureOpenaiEmbeddingsId || ""
   )
   const [anthropicAPIKey, setAnthropicAPIKey] = useState(
-    profile?.anthropic_api_key || ""
+    profile?.anthropicApiKey || ""
   )
   const [googleGeminiAPIKey, setGoogleGeminiAPIKey] = useState(
-    profile?.google_gemini_api_key || ""
+    profile?.googleGeminiApiKey || ""
   )
   const [mistralAPIKey, setMistralAPIKey] = useState(
-    profile?.mistral_api_key || ""
+    profile?.mistralApiKey || ""
   )
-  const [groqAPIKey, setGroqAPIKey] = useState(profile?.groq_api_key || "")
+  const [groqAPIKey, setGroqAPIKey] = useState(profile?.groqApiKey || "")
   const [perplexityAPIKey, setPerplexityAPIKey] = useState(
-    profile?.perplexity_api_key || ""
+    profile?.perplexityApiKey || ""
   )
 
   const [openrouterAPIKey, setOpenrouterAPIKey] = useState(
-    profile?.openrouter_api_key || ""
+    profile?.openrouterApiKey || ""
   )
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    // await supabase.auth.signOut()
     router.push("/login")
     router.refresh()
     return
@@ -127,7 +127,7 @@ export const ProfileSettings: FC<ProfileSettingsProps> = ({}) => {
 
   const handleSave = async () => {
     if (!profile) return
-    let profileImageUrl = profile.image_url
+    let profileImageUrl = profile.imageUrl
     let profileImagePath = ""
 
     if (profileImageFile) {
@@ -138,26 +138,26 @@ export const ProfileSettings: FC<ProfileSettingsProps> = ({}) => {
 
     const updatedProfile = await updateProfile(profile.id, {
       ...profile,
-      display_name: displayName,
+      displayName: displayName,
       username,
-      profile_context: profileInstructions,
-      image_url: profileImageUrl,
-      image_path: profileImagePath,
-      openai_api_key: openaiAPIKey,
-      openai_organization_id: openaiOrgID,
-      anthropic_api_key: anthropicAPIKey,
-      google_gemini_api_key: googleGeminiAPIKey,
-      mistral_api_key: mistralAPIKey,
-      groq_api_key: groqAPIKey,
-      perplexity_api_key: perplexityAPIKey,
-      use_azure_openai: useAzureOpenai,
-      azure_openai_api_key: azureOpenaiAPIKey,
-      azure_openai_endpoint: azureOpenaiEndpoint,
-      azure_openai_35_turbo_id: azureOpenai35TurboID,
-      azure_openai_45_turbo_id: azureOpenai45TurboID,
-      azure_openai_45_vision_id: azureOpenai45VisionID,
-      azure_openai_embeddings_id: azureEmbeddingsID,
-      openrouter_api_key: openrouterAPIKey
+      profileContext: profileInstructions,
+      imageUrl: profileImageUrl,
+      imagePath: profileImagePath,
+      openaiApiKey: openaiAPIKey,
+      openaiOrganizationId: openaiOrgID,
+      anthropicApiKey: anthropicAPIKey,
+      googleGeminiApiKey: googleGeminiAPIKey,
+      mistralApiKey: mistralAPIKey,
+      groqApiKey: groqAPIKey,
+      perplexityApiKey: perplexityAPIKey,
+      useAzureOpenai: useAzureOpenai,
+      azureOpenaiApiKey: azureOpenaiAPIKey,
+      azureOpenaiEndpoint: azureOpenaiEndpoint,
+      azureOpenai35TurboId: azureOpenai35TurboID,
+      azureOpenai45TurboId: azureOpenai45TurboID,
+      azureOpenai45VisionId: azureOpenai45VisionID,
+      azureOpenaiEmbeddingsId: azureEmbeddingsID,
+      openrouterApiKey: openrouterAPIKey
     })
 
     setProfile(updatedProfile)
@@ -179,11 +179,11 @@ export const ProfileSettings: FC<ProfileSettingsProps> = ({}) => {
       let providerKey: keyof typeof profile
 
       if (provider === "google") {
-        providerKey = "google_gemini_api_key"
+        providerKey = "googleGeminiApiKey"
       } else if (provider === "azure") {
-        providerKey = "azure_openai_api_key"
+        providerKey = "azureOpenaiApiKey"
       } else {
-        providerKey = `${provider}_api_key` as keyof typeof profile
+        providerKey = `${provider}ApiKey` as keyof typeof profile
       }
 
       const models = LLM_LIST_MAP[provider]
@@ -296,10 +296,10 @@ export const ProfileSettings: FC<ProfileSettingsProps> = ({}) => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        {profile.image_url ? (
+        {profile.imageUrl ? (
           <Image
             className="mt-2 size-[34px] cursor-pointer rounded hover:opacity-50"
-            src={profile.image_url + "?" + new Date().getTime()}
+            src={profile.imageUrl + "?" + new Date().getTime()}
             height={34}
             width={34}
             alt={"Image"}

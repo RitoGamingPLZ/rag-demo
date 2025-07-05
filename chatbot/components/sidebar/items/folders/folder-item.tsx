@@ -1,13 +1,14 @@
 import { cn } from "@/lib/utils"
-import { Tables } from "@/supabase/types"
 import { ContentType } from "@/types"
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react"
 import { FC, useRef, useState } from "react"
 import { DeleteFolder } from "./delete-folder"
 import { UpdateFolder } from "./update-folder"
+import { Folder as FolderEntity } from "@/lib/generated/prisma"
+
 
 interface FolderProps {
-  folder: Tables<"folders">
+  folder: FolderEntity
   contentType: ContentType
   children: React.ReactNode
   onUpdateFolder: (itemId: string, folderId: string | null) => void
